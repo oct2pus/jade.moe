@@ -100,6 +100,7 @@ gem 'json-ld-preloaded', '~> 3.1'
 gem 'rdf-normalize', '~> 0.4'
 
 gem 'redcarpet', '~> 3.5'
+gem 'rexml'
 
 group :development, :test do
   gem 'fabrication', '~> 2.22'
