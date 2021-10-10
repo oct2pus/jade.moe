@@ -1,8 +1,0 @@
-en:
-  flavours:
-    jade:
-      description: The default flavour for Jade.moe.
-      name: Jade Edition
-  skins:
-    jade:
-      default: Default
