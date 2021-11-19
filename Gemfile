@@ -5,7 +5,7 @@ ruby '>= 2.5.0', '< 3.1.0'
 
 gem 'pkg-config', '~> 1.4'
 
-gem 'puma', '~> 5.4'
+gem 'puma', '~> 5.5'
 gem 'rails', '~> 6.1.4'
 gem 'sprockets', '~> 3.7.2'
 gem 'thor', '~> 1.1'
@@ -17,7 +17,7 @@ gem 'makara', '~> 0.5'
 gem 'pghero', '~> 2.8'
 gem 'dotenv-rails', '~> 2.7'
 
-gem 'aws-sdk-s3', '~> 1.103', require: false
+gem 'aws-sdk-s3', '~> 1.104', require: false
 gem 'fog-core', '<= 2.1.0'
 gem 'fog-openstack', '~> 0.3', require: false
 gem 'kt-paperclip', '~> 7.0'
@@ -65,7 +65,6 @@ gem 'nsa', '~> 0.2'
 gem 'oj', '~> 3.13'
 gem 'ox', '~> 2.14'
 gem 'parslet'
-gem 'parallel', '~> 1.21'
 gem 'posix-spawn'
 gem 'pundit', '~> 2.1'
 gem 'premailer-rails'
@@ -73,7 +72,7 @@ gem 'rack-attack', '~> 6.5'
 gem 'rack-cors', '~> 1.1', require: 'rack/cors'
 gem 'rails-i18n', '~> 6.0'
 gem 'rails-settings-cached', '~> 0.6'
-gem 'redis', '~> 4.4', require: ['redis', 'redis/connection/hiredis']
+gem 'redis', '~> 4.5', require: ['redis', 'redis/connection/hiredis']
 gem 'mario-redis-lock', '~> 1.2', require: 'redis_lock'
 gem 'rqrcode', '~> 2.1'
 gem 'ruby-progressbar', '~> 1.11'
@@ -116,7 +115,7 @@ group :production, :test do
 end
 
 group :test do
-  gem 'capybara', '~> 3.35'
+  gem 'capybara', '~> 3.36'
   gem 'climate_control', '~> 0.2'
   gem 'faker', '~> 2.19'
   gem 'microformats', '~> 4.2'
@@ -124,7 +123,6 @@ group :test do
   gem 'rspec-sidekiq', '~> 3.1'
   gem 'simplecov', '~> 0.21', require: false
   gem 'webmock', '~> 3.14'
-  gem 'parallel_tests', '~> 3.7'
   gem 'rspec_junit_formatter', '~> 0.4'
 end
 
@@ -137,7 +135,7 @@ group :development do
   gem 'letter_opener', '~> 1.7'
   gem 'letter_opener_web', '~> 1.4'
   gem 'memory_profiler'
-  gem 'rubocop', '~> 1.21', require: false
+  gem 'rubocop', '~> 1.22', require: false
   gem 'rubocop-rails', '~> 2.12', require: false
   gem 'brakeman', '~> 5.1', require: false
   gem 'bundler-audit', '~> 0.9', require: false
