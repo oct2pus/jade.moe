@@ -40,6 +40,10 @@ RSpec.describe AdvancedTextFormatter do
         it 'formats code using <pre> and <code>' do
           is_expected.to include '<pre><code>int main'
         end
+
+        it 'does not strip leading spaces' do
+          is_expected.to include '>  return 0'
+        end
       end
 
       context 'given some quote' do
@@ -47,6 +51,14 @@ RSpec.describe AdvancedTextFormatter do
 
         it 'formats code using <code>' do
           is_expected.to include '<blockquote><p>foo</p></blockquote>'
+        end
+      end
+
+      context 'given text with a local-domain mention' do
+        let(:text) { 'foo https://cb6e6126.ngrok.io/about/more' }
+
+        it 'creates a link' do
+          is_expected.to include '<a href="https://cb6e6126.ngrok.io/about/more"'
         end
       end
 

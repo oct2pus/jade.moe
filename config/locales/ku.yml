@@ -199,7 +199,6 @@ ku:
       security_measures:
         only_password: Têne borînpeyv
         password_and_2fa: Borînpeyv û 2FA
-        password_and_sign_in_token: Borînpeyv û navnîşana e-nameyê
       sensitive: Hêz-hestiyar
       sensitized: Wek hestiyar hatiye nîşankirin
       shared_inbox_url: URLya wergirtiyên parvekirî
@@ -520,6 +519,7 @@ ku:
       delivery:
         all: Hemû
         clear: Çewtiyên gihandinê paqij bike
+        failing: Têkçûn
         restart: Gihandinê nû va bike
         stop: Gehandinê rawestîne
         unavailable: Nederbasdar
@@ -804,6 +804,7 @@ ku:
           other: Di nava hefteya dawî de ji aliyê %{count} ve hate parvekirin
         title: Girêdanên di rojevê de
         usage_comparison: Îro %{today} car hate parvekirin, li gorî %{yesterday} duh
+      only_allowed: Tenê yên mafdayî
       pending_review: Li benda nirxandinê ye
       preview_card_providers:
         allowed: Girêdanên ji vê weşangerê dikarin bibin rojev
@@ -845,6 +846,7 @@ ku:
           one: Di nava hefteya dawî de ji aliyê kesekî ve hatiye bikaranîn
           other: Di nava hefteya dawî de ji %{count} kes ve hatiye bikaranîn
       title: Rojev
+      trending: Rojev
     warning_presets:
       add_new: Yeka nû tevlî bike
       delete: Jê bibe
@@ -1036,10 +1038,12 @@ ku:
       appealed_msg: Îtîraza te hatiye şandin. Ku were pejirandin, tu yê werî agahdarkirin.
       appeals:
         submit: Îtîrazê bişîne
+      approve_appeal: Îtîrazê bipejirîne
       associated_report: Ragihandina têkildar
       created_at: Dîrok
       description_html: Ev kiryarên ku li dijî ajimêrê te hatine kirin û hişyariyên ku ji hêla xebatkarên %{instance} ve ji te re hatine şandinin.
       recipient: Ji kê re
+      reject_appeal: Îtîrazê nepejirîne
       status: 'Şandî #%{id}'
       status_removed: Şandî jixwe ji pergalê hatî rakirin
       title: "%{action} ji %{date}"
@@ -1239,8 +1243,8 @@ ku:
         one: Herwiha, dema tu dûr bûyî te şopînerek nû bi dest xist! Bijî!
         other: Herwiha, dema tu dûr bûyî te %{count} şopînerek nû bi dest xist! Bijî!
       subject:
-        one: "1 agahdarî ji serdana te ya herî dawî ji \U0001F418"
-        other: "%{count} agahdarî ji serdana te ya herî dawî ji \U0001F418"
+        one: "1 agahdarî ji serdana te ya herî dawî 🐘"
+        other: "%{count} agahdarî ji serdana te ya herî dawî 🐘"
       title: Di tunebûna te de...
     favourite:
       body: 'Şandiya te hate bijartin ji alî %{name} ve:'
@@ -1354,6 +1358,11 @@ ku:
   reports:
     errors:
       invalid_rules: rêbazên derbasdar nîşan nadê
+  rss:
+    content_warning: 'Hişyariya naverokê:'
+    descriptions:
+      account: Şandiyên gelemperî ji @%{acct}
+      tag: 'Şandiyên gelemperî yên nîşankirî #%{hashtag}'
   scheduled_statuses:
     over_daily_limit: Te sînorê %{limit} şandiyên demsazkirî yên ji bo îro derbas kir
     over_total_limit: Te sînorê %{limit} şandiyên demsazkirî derbas kir
@@ -1512,17 +1521,20 @@ ku:
     pinned: Şandiya derzîkirî
     reblogged: bilindkirî
     sensitive_content: Naveroka hestiyarî
+  strikes:
+    errors:
+      too_late: Pir dereng e ji bo îtîrazê li ser vê binpêkirinê
   tags:
     does_not_match_previous_name: bi navê berê re li hev nayê
   terms:
     body_html: |
-      <h2>Privacy Policy</h2>
-      <h3 id="collect">What information do we collect?</h3>
+      <h2>Politîka taybetiyê</h2>
+      <h3 id="collect">Em çi zanyarî kom dikin?</h3>
 
       <ul>
-        <li><em>Basic account information</em>: If you register on this server, you may be asked to enter a username, an e-mail address and a password. You may also enter additional profile information such as a display name and biography, and upload a profile picture and header image. The username, display name, biography, profile picture and header image are always listed publicly.</li>
-        <li><em>Posts, following and other public information</em>: The list of people you follow is listed publicly, the same is true for your followers. When you submit a message, the date and time is stored as well as the application you submitted the message from. Messages may contain media attachments, such as pictures and videos. Public and unlisted posts are available publicly. When you feature a post on your profile, that is also publicly available information. Your posts are delivered to your followers, in some cases it means they are delivered to different servers and copies are stored there. When you delete posts, this is likewise delivered to your followers. The action of reblogging or favouriting another post is always public.</li>
-        <li><em>Direct and followers-only posts</em>: All posts are stored and processed on the server. Followers-only posts are delivered to your followers and users who are mentioned in them, and direct posts are delivered only to users mentioned in them. In some cases it means they are delivered to different servers and copies are stored there. We make a good faith effort to limit the access to those posts only to authorized persons, but other servers may fail to do so. Therefore it's important to review servers your followers belong to. You may toggle an option to approve and reject new followers manually in the settings. <em>Please keep in mind that the operators of the server and any receiving server may view such messages</em>, and that recipients may screenshot, copy or otherwise re-share them. <em>Do not share any dangerous information over Mastodon.</em></li>
+        <li><em>Zanyariyên asayî</em>: Ku tu xwe li ser vê rajekarê tomar bikî, Wê ji te xwestin ku e-name û borînpeyvekê têxî. Her wiha dibe ku tu zanyariyên vebijêrkî têxî wekî zanyariyên profîlê profile mînak: Navê xuyangê û jiyanname, wêneya profîlê û wêneya jormalperê bar bikî. Navê bikarhêneriyê, navê xuyangê, jiyanname, wêneya profîlê û wêneya jormalperêher dem bi giştî tên nîşandan.</li>
+        <li><em>Şandî, şopandin û zanyariyên giştî yên din</em>: Kesên ku tu wan dişopînî bi giştî tê nîşandan, heman tişt bo şopîneran e. Dema tu peyamekê dişînî, dane û dem tên tomarkirin wekî sepanê. Messages may contain media attachments, such as pictures and videos. Public and unlisted posts are available publicly. When you feature a post on your profile, that is also publicly available information. Your posts are delivered to your followers, in some cases it means they are delivered to different servers and copies are stored there. When you delete posts, this is likewise delivered to your followers. The action of reblogging or favouriting another post is always public.</li>
+        <li><em>Direct and followers-only posts</em>: All posts are stored and processed on the server. Followers-only posts are delivered to your followers and users who are mentioned in them, and direct posts are delivered only to users mentioned in them. In some cases it means they are delivered to different servers and copies are stored there. We make a good faith effort to limit the access to those posts only to authorized persons, but other servers may fail to do so. Therefore it's important to review servers your followers belong to. You may toggle an option to approve and reject new followers manually in the settings. <em>Please keep in mind that the operators of the server and any receiving server may view such messages</em>, and that recipients may screenshot, copy or otherwise re-share them. <em>Do not share any sensitive information over Mastodon.</em></li>
         <li><em>IPs and other metadata</em>: When you log in, we record the IP address you log in from, as well as the name of your browser application. All the logged in sessions are available for your review and revocation in the settings. The latest IP address used is stored for up to 12 months. We also may retain server logs which include the IP address of every request to our server.</li>
       </ul>
 
@@ -1593,7 +1605,7 @@ ku:
 
       <p>If we decide to change our privacy policy, we will post those changes on this page.</p>
 
-      <p>This document is CC-BY-SA. It was last updated March 7, 2018.</p>
+      <p>This document is CC-BY-SA. It was last updated May 26, 2022.</p>
 
       <p>Originally adapted from the <a href="https://github.com/discourse/discourse">Discourse privacy policy</a>.</p>
     title: "%{instance} mercên bikaranîn û politîkayên nehêniyê"
@@ -1635,12 +1647,13 @@ ku:
       explanation: Te yedekîya tijê ya ajimêrê xwe Mastodonê xwest. Niha ji daxistinê re amade ye!
       subject: Arşîva te amede ye bo daxistinê
       title: Pakêtkirina arşîvan
-    sign_in_token:
-      details: 'Li vir hûrgiliyên hewldanê hene:'
-      explanation: 'Me hewildanek têketina ajimêra te ji navnîşana IP ya nenas destnîşan kir. Ger ev tu bî, ji kerema xwe koda ewlehiyê ya jêr binivîsîne di rûpela jêpirsînê de:'
-      further_actions: 'Ku ev ne tu bî, ji kerema xwe re borînpeyva xwe biguherîne û li ser ajimêra xwe rastkirina du-gavî çalak bike. Tu dikarî wê ji vê derê çê bikî:'
-      subject: Ji kerema xwe re hewldanên têketinê piştrast bike
-      title: Hewldanên têketinê
+    suspicious_sign_in:
+      change_password: borînpeyva xwe biguherîne
+      details: 'Li vir hûrgiliyên hewldanên têketinê hene:'
+      explanation: Me têketineke nû ji ajimêra te ji navnîşaneke IP ya nû dît.
+      further_actions_html: Ku ev ne tu bû, em ji te re pêşniyar dikin ku tu di tavilê de %{action} bikî û piştrastkirina du-gavî çalak bikî da ku ajimêra te di ewlehiyê de bimîne.
+      subject: Ajimêra te ji navnîşaneke IP ya nû ve hatiye gihîştin
+      title: Têketineke nû
     warning:
       appeal: Îtîrazekê bişîne
       appeal_description: Heke tu bawer dikî ku ev şaşetiyeke, tu dikarî îtîrazekê ji karmendên %{instance} re bişînî.
@@ -1691,13 +1704,10 @@ ku:
       title: Bi xêr hatî, %{name}!
   users:
     follow_limit_reached: Tu nikarî zêdetirî %{limit} kesan bişopînî
-    generic_access_help_html: Di gihîştina ajimêrê te de pirsgirêk heye? Tu dikarî ji bo alîkariyê bi %{email} re têkilî deyne
     invalid_otp_token: Koda du-gavî ya nelê
-    invalid_sign_in_token: Kilîda ewlehiyê a nelê
     otp_lost_help_html: Heke te gihîştina herduyan ji dest da, dibe ku tu bi %{email} re têkilî deyne
     seamless_external_login: Te bi rajekarke biyanî re têketina xwe kir, ji ber vê yekê borînpeyv û e-name nayê bikaranîn.
     signed_in_as: 'Têketin wekî:'
-    suspicious_sign_in_confirmation: Xuya dike ku te berê têketin ji vê amûrê nekiriye, ji ber vê yekê em kodeke ewlehiyê ji navnîşana e-nameya te re dişînin da ku piştrast bikî ku tu ye an na.
   verification:
     explanation_html: 'Tu dikarî <strong>xwe wekî xwediyê girêdanên li daneyê meta profîla xwe piştrast bikî</strong>. Ji bo vê, hewceye girêda malperê di nav profîla te ya mastodonê de girêdanekî paş hebe. Girêdana paş<strong>hewceye</strong> taybetîyek <code>rel="me"</code>hebe. Naveroka nivîsa girêdanê ne girîng e. Ev jî mînakek e:'
     verification: Piştrastkirin

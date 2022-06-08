@@ -239,16 +239,21 @@
   }
 }
 
+.text-icon,
+.text-icon-button {
+  font-weight: 600;
+  font-size: 11px;
+  line-height: 27px;
+  cursor: default;
+}
+
 .text-icon-button {
   color: $lighter-text-color;
   border: 0;
   border-radius: 4px;
   background: transparent;
   cursor: pointer;
-  font-weight: 600;
-  font-size: 11px;
   padding: 0 3px;
-  line-height: 27px;
   outline: 0;
   transition: all 100ms ease-in;
   transition-property: background-color, color;
@@ -1566,7 +1571,7 @@ button.icon-button.active i.fa-retweet {
 .loading-bar {
   background-color: $ui-highlight-color;
   height: 3px;
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   z-index: 9999;

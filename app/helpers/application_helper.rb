@@ -83,7 +83,8 @@ module ApplicationHelper
   end
 
   def provider_sign_in_link(provider)
-    link_to I18n.t("auth.providers.#{provider}", default: provider.to_s.chomp('_oauth2').capitalize), omniauth_authorize_path(:user, provider), class: "button button-#{provider}", method: :post
+    label = Devise.omniauth_configs[provider]&.strategy&.display_name.presence || I18n.t("auth.providers.#{provider}", default: provider.to_s.chomp('_oauth2').capitalize)
+    link_to label, omniauth_authorize_path(:user, provider), class: "button button-#{provider}", method: :post
   end
 
   def open_deletion?
@@ -132,7 +133,7 @@ module ApplicationHelper
     elsif status.private_visibility? || status.limited_visibility?
       fa_icon('lock', title: I18n.t('statuses.visibilities.private'))
     elsif status.direct_visibility?
-      fa_icon('envelope', title: I18n.t('statuses.visibilities.direct'))
+      fa_icon('at', title: I18n.t('statuses.visibilities.direct'))
     end
   end
 
@@ -244,7 +245,7 @@ module ApplicationHelper
     end.values
   end
 
-  def prerender_custom_emojis(html, custom_emojis)
-    EmojiFormatter.new(html, custom_emojis, animate: prefers_autoplay?).to_s
+  def prerender_custom_emojis(html, custom_emojis, other_options = {})
+    EmojiFormatter.new(html, custom_emojis, other_options.merge(animate: prefers_autoplay?)).to_s
   end
 end

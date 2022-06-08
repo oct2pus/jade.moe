@@ -26,7 +26,6 @@
 #  otp_required_for_login    :boolean          default(FALSE), not null
 #  last_emailed_at           :datetime
 #  otp_backup_codes          :string           is an Array
-#  filtered_languages        :string           default([]), not null, is an Array
 #  account_id                :bigint(8)        not null
 #  disabled                  :boolean          default(FALSE), not null
 #  moderator                 :boolean          default(FALSE), not null
@@ -48,10 +47,13 @@ class User < ApplicationRecord
     current_sign_in_ip
     last_sign_in_ip
     skip_sign_in_token
+    filtered_languages
   )
 
   include Settings::Extend
   include UserRoles
+  include Redisable
+  include LanguagesHelper
 
   # The home and list feeds will be stored in Redis for this amount
   # of time, and status fan-out to followers will include only people
@@ -130,7 +132,7 @@ class User < ApplicationRecord
            :reduce_motion, :system_font_ui, :noindex, :flavour, :skin, :display_media, :hide_followers_count,
            :expand_spoilers, :default_language, :aggregate_reblogs, :show_application,
            :advanced_layout, :use_blurhash, :use_pending_items, :trends, :crop_images,
-           :disable_swiping, :default_content_type, :system_emoji_font,
+           :disable_swiping, :always_send_emails, :default_content_type, :system_emoji_font,
            to: :settings, prefix: :setting, allow_nil: false
 
   attr_reader :invite_code
@@ -247,7 +249,7 @@ class User < ApplicationRecord
   end
 
   def preferred_posting_language
-    settings.default_language || locale
+    valid_locale_cascade(settings.default_language, locale)
   end
 
   def setting_default_privacy
@@ -464,7 +466,7 @@ class User < ApplicationRecord
   end
 
   def regenerate_feed!
-    RegenerationWorker.perform_async(account_id) if Redis.current.set("account:#{account_id}:regeneration", true, nx: true, ex: 1.day.seconds)
+    RegenerationWorker.perform_async(account_id) if redis.set("account:#{account_id}:regeneration", true, nx: true, ex: 1.day.seconds)
   end
 
   def needs_feed_update?
