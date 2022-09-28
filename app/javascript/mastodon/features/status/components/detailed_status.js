@@ -138,7 +138,11 @@ class DetailedStatus extends ImmutablePureComponent {
             backgroundColor={attachment.getIn(['meta', 'colors', 'background'])}
             foregroundColor={attachment.getIn(['meta', 'colors', 'foreground'])}
             accentColor={attachment.getIn(['meta', 'colors', 'accent'])}
+            sensitive={status.get('sensitive')}
+            visible={this.props.showMedia}
+            blurhash={attachment.get('blurhash')}
             height={150}
+            onToggleVisibility={this.props.onToggleMediaVisibility}
           />
         );
       } else if (status.getIn(['media_attachments', 0, 'type']) === 'video') {
@@ -185,7 +189,7 @@ class DetailedStatus extends ImmutablePureComponent {
       'public': { icon: 'globe', text: intl.formatMessage(messages.public_short) },
       'unlisted': { icon: 'unlock', text: intl.formatMessage(messages.unlisted_short) },
       'private': { icon: 'lock', text: intl.formatMessage(messages.private_short) },
-      'direct': { icon: 'envelope', text: intl.formatMessage(messages.direct_short) },
+      'direct': { icon: 'at', text: intl.formatMessage(messages.direct_short) },
     };
 
     const visibilityIcon = visibilityIconInfo[status.get('visibility')];

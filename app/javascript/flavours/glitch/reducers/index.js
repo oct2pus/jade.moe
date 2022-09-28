@@ -34,7 +34,6 @@ import conversations from './conversations';
 import suggestions from './suggestions';
 import pinnedAccountsEditor from './pinned_accounts_editor';
 import polls from './polls';
-import identity_proofs from './identity_proofs';
 import trends from './trends';
 import announcements from './announcements';
 import markers from './markers';
@@ -42,6 +41,7 @@ import account_notes from './account_notes';
 import picture_in_picture from './picture_in_picture';
 import accounts_map from './accounts_map';
 import history from './history';
+import tags from './tags';
 
 const reducers = {
   announcements,
@@ -73,7 +73,6 @@ const reducers = {
   notifications,
   height_cache,
   custom_emojis,
-  identity_proofs,
   lists,
   listEditor,
   listAdder,
@@ -87,6 +86,7 @@ const reducers = {
   account_notes,
   picture_in_picture,
   history,
+  tags,
 };
 
 export default combineReducers(reducers);

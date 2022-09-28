@@ -14,6 +14,7 @@ import AudioModal from './audio_modal';
 import DoodleModal from './doodle_modal';
 import ConfirmationModal from './confirmation_modal';
 import FocalPointModal from './focal_point_modal';
+import DeprecatedSettingsModal from './deprecated_settings_modal';
 import {
   OnboardingModal,
   MuteModal,
@@ -25,6 +26,7 @@ import {
   ListAdder,
   PinnedAccountsEditor,
   CompareHistoryModal,
+  FilterModal,
 } from 'flavours/glitch/util/async-components';
 
 const MODAL_COMPONENTS = {
@@ -40,6 +42,7 @@ const MODAL_COMPONENTS = {
   'BLOCK': BlockModal,
   'REPORT': ReportModal,
   'SETTINGS': SettingsModal,
+  'DEPRECATED_SETTINGS': () => Promise.resolve({ default: DeprecatedSettingsModal }),
   'ACTIONS': () => Promise.resolve({ default: ActionsModal }),
   'EMBED': EmbedModal,
   'LIST_EDITOR': ListEditor,
@@ -47,6 +50,7 @@ const MODAL_COMPONENTS = {
   'LIST_ADDER': ListAdder,
   'PINNED_ACCOUNTS_EDITOR': PinnedAccountsEditor,
   'COMPARE_HISTORY': CompareHistoryModal,
+  'FILTER': FilterModal,
 };
 
 export default class ModalRoot extends React.PureComponent {
