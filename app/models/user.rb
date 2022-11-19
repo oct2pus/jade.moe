@@ -237,6 +237,11 @@ class User < ApplicationRecord
   end
 
   def functional?
+
+    functional_or_moved?
+  end
+
+  def functional_or_moved?
     confirmed? && approved? && !disabled? && !account.suspended? && !account.memorial?
   end
 
@@ -279,6 +284,10 @@ class User < ApplicationRecord
     webauthn_credentials.destroy_all if webauthn_enabled?
 
     save!
+  end
+
+  def prefers_noindex?
+    setting_noindex
   end
 
   def preferred_posting_language

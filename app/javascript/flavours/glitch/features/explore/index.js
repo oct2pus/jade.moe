@@ -13,7 +13,6 @@ import Search from 'flavours/glitch/features/compose/containers/search_container
 import SearchResults from './results';
 import { showTrends } from 'flavours/glitch/initial_state';
 import { Helmet } from 'react-helmet';
-import { title } from 'flavours/glitch/initial_state';
 
 const messages = defineMessages({
   title: { id: 'explore.title', defaultMessage: 'Explore' },
@@ -24,6 +23,16 @@ const mapStateToProps = state => ({
   layout: state.getIn(['meta', 'layout']),
   isSearching: state.getIn(['search', 'submitted']) || !showTrends,
 });
+
+// Fix strange bug on Safari where <span> (rendered by FormattedMessage) disappears
+// after clicking around Explore top bar (issue #20885).
+// Removing width=100% from <a> also fixes it, as well as replacing <span> with <div>
+// We're choosing to wrap span with div to keep the changes local only to this tool bar.
+const WrapFormattedMessage = ({ children, ...props }) => <div><FormattedMessage {...props}>{children}</FormattedMessage></div>;
+WrapFormattedMessage.propTypes = {
+  children: PropTypes.any,
+};
+
 
 export default @connect(mapStateToProps)
 @injectIntl
@@ -48,7 +57,7 @@ class Explore extends React.PureComponent {
     this.column = c;
   }
 
-  render () {
+  render() {
     const { intl, multiColumn, isSearching } = this.props;
     const { signedIn } = this.context.identity;
 
@@ -71,10 +80,10 @@ class Explore extends React.PureComponent {
           ) : (
             <React.Fragment>
               <div className='account__section-headline'>
-                <NavLink exact to='/explore'><FormattedMessage id='explore.trending_statuses' defaultMessage='Posts' /></NavLink>
-                <NavLink exact to='/explore/tags'><FormattedMessage id='explore.trending_tags' defaultMessage='Hashtags' /></NavLink>
-                <NavLink exact to='/explore/links'><FormattedMessage id='explore.trending_links' defaultMessage='News' /></NavLink>
-                {signedIn && <NavLink exact to='/explore/suggestions'><FormattedMessage id='explore.suggested_follows' defaultMessage='For you' /></NavLink>}
+                <NavLink exact to='/explore'><WrapFormattedMessage id='explore.trending_statuses' defaultMessage='Posts' /></NavLink>
+                <NavLink exact to='/explore/tags'><WrapFormattedMessage id='explore.trending_tags' defaultMessage='Hashtags' /></NavLink>
+                <NavLink exact to='/explore/links'><WrapFormattedMessage id='explore.trending_links' defaultMessage='News' /></NavLink>
+                {signedIn && <NavLink exact to='/explore/suggestions'><WrapFormattedMessage id='explore.suggested_follows' defaultMessage='For you' /></NavLink>}
               </div>
 
               <Switch>
@@ -85,7 +94,8 @@ class Explore extends React.PureComponent {
               </Switch>
 
               <Helmet>
-                <title>{intl.formatMessage(messages.title)} - {title}</title>
+                <title>{intl.formatMessage(messages.title)}</title>
+                <meta name='robots' content={isSearching ? 'noindex' : 'all'} />
               </Helmet>
             </React.Fragment>
           )}
