@@ -133,9 +133,8 @@ a.button.logo-button {
   justify-content: center;
 }
 
-.embed,
-.public-layout {
-  .status__content[data-spoiler=folded] {
+.embed {
+  .status__content[data-spoiler='folded'] {
     .e-content {
       display: none;
     }
@@ -204,8 +203,7 @@ a.button.logo-button {
 }
 
 // Styling from upstream's WebUI, as public pages use the same layout
-.embed,
-.public-layout {
+.embed {
   .status {
     .status__info {
       font-size: 15px;
@@ -244,8 +242,7 @@ a.button.logo-button {
 }
 
 .rtl {
-  .embed,
-  .public-layout {
+  .embed {
     .status {
       padding-left: 10px;
       padding-right: 68px;
@@ -271,7 +268,7 @@ a.button.logo-button {
   border: 0;
   background: transparent;
   padding: 0;
-  padding-top: 8px;
+  padding-top: 16px;
   text-decoration: none;
 
   &:hover,

@@ -122,9 +122,7 @@ class AccountStatusesCleanupPolicy < ApplicationRecord
       # may need to be deleted, so we'll have to start again.
       redis.del("account_cleanup:#{account.id}")
     end
-    if EXCEPTION_THRESHOLDS.map { |name| attribute_change_to_be_saved(name) }.compact.any? { |old, new| old.present? && (new.nil? || new > old) }
-      redis.del("account_cleanup:#{account.id}")
-    end
+    redis.del("account_cleanup:#{account.id}") if EXCEPTION_THRESHOLDS.map { |name| attribute_change_to_be_saved(name) }.compact.any? { |old, new| old.present? && (new.nil? || new > old) }
   end
 
   def validate_local_account
@@ -139,7 +137,10 @@ class AccountStatusesCleanupPolicy < ApplicationRecord
     # Filtering on `id` rather than `min_status_age` ago will treat
     # non-snowflake statuses as older than they really are, but Mastodon
     # has switched to snowflake IDs significantly over 2 years ago anyway.
-    max_id = [max_id, Mastodon::Snowflake.id_at(min_status_age.seconds.ago, with_random: false)].compact.min
+    snowflake_id = Mastodon::Snowflake.id_at(min_status_age.seconds.ago, with_random: false)
+
+    max_id = snowflake_id if max_id.nil? || snowflake_id < max_id
+
     Status.where(Status.arel_table[:id].lteq(max_id))
   end
 

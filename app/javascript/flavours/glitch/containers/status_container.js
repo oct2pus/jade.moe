@@ -1,7 +1,7 @@
 import { connect } from 'react-redux';
 import Status from 'flavours/glitch/components/status';
 import { List as ImmutableList } from 'immutable';
-import { makeGetStatus } from 'flavours/glitch/selectors';
+import { makeGetStatus, makeGetPictureInPicture } from 'flavours/glitch/selectors';
 import {
   replyCompose,
   mentionCompose,
@@ -23,7 +23,9 @@ import {
   deleteStatus,
   hideStatus,
   revealStatus,
-  editStatus
+  editStatus,
+  translateStatus,
+  undoStatusTranslation,
 } from 'flavours/glitch/actions/statuses';
 import {
   initAddFilter,
@@ -36,8 +38,8 @@ import { openModal } from 'flavours/glitch/actions/modal';
 import { deployPictureInPicture } from 'flavours/glitch/actions/picture_in_picture';
 import { changeLocalSetting } from 'flavours/glitch/actions/local_settings';
 import { defineMessages, injectIntl, FormattedMessage } from 'react-intl';
-import { boostModal, favouriteModal, deleteModal } from 'flavours/glitch/util/initial_state';
-import { filterEditLink } from 'flavours/glitch/util/backend_links';
+import { boostModal, favouriteModal, deleteModal } from 'flavours/glitch/initial_state';
+import { filterEditLink } from 'flavours/glitch/utils/backend_links';
 import { showAlertForError } from '../actions/alerts';
 import AccountContainer from 'flavours/glitch/containers/account_container';
 import Spoilers from '../components/spoilers';
@@ -50,6 +52,8 @@ const messages = defineMessages({
   redraftMessage: { id: 'confirmations.redraft.message', defaultMessage: 'Are you sure you want to delete this status and re-draft it? You will lose all replies, boosts and favourites to it.' },
   replyConfirm: { id: 'confirmations.reply.confirm', defaultMessage: 'Reply' },
   replyMessage: { id: 'confirmations.reply.message', defaultMessage: 'Replying now will overwrite the message you are currently composing. Are you sure you want to proceed?' },
+  editConfirm: { id: 'confirmations.edit.confirm', defaultMessage: 'Edit' },
+  editMessage: { id: 'confirmations.edit.message', defaultMessage: 'Editing now will overwrite the message you are currently composing. Are you sure you want to proceed?' },
   unfilterConfirm: { id: 'confirmations.unfilter.confirm', defaultMessage: 'Show' },
   author: { id: 'confirmations.unfilter.author', defaultMessage: 'Author' },
   matchingFilters: { id: 'confirmations.unfilter.filters', defaultMessage: 'Matching {count, plural, one {filter} other {filters}}' },
@@ -58,6 +62,7 @@ const messages = defineMessages({
 
 const makeMapStateToProps = () => {
   const getStatus = makeGetStatus();
+  const getPictureInPicture = makeGetPictureInPicture();
 
   const mapStateToProps = (state, props) => {
 
@@ -76,12 +81,12 @@ const makeMapStateToProps = () => {
     }
 
     return {
-      containerId : props.containerId || props.id,  //  Should match reblogStatus's id for reblogs
-      status      : status,
-      account     : account || props.account,
-      settings    : state.get('local_settings'),
-      prepend     : prepend || props.prepend,
-      usingPiP    : state.get('picture_in_picture').statusId === props.id,
+      containerId: props.containerId || props.id,  //  Should match reblogStatus's id for reblogs
+      status: status,
+      account: account || props.account,
+      settings: state.get('local_settings'),
+      prepend: prepend || props.prepend,
+      pictureInPicture: getPictureInPicture(state, props),
     };
   };
 
@@ -180,7 +185,26 @@ const mapDispatchToProps = (dispatch, { intl, contextType }) => ({
   },
 
   onEdit (status, history) {
-    dispatch(editStatus(status.get('id'), history));
+    dispatch((_, getState) => {
+      let state = getState();
+      if (state.getIn(['compose', 'text']).trim().length !== 0) {
+        dispatch(openModal('CONFIRM', {
+          message: intl.formatMessage(messages.editMessage),
+          confirm: intl.formatMessage(messages.editConfirm),
+          onConfirm: () => dispatch(editStatus(status.get('id'), history)),
+        }));
+      } else {
+        dispatch(editStatus(status.get('id'), history));
+      }
+    });
+  },
+
+  onTranslate (status) {
+    if (status.get('translation')) {
+      dispatch(undoStatusTranslation(status.get('id')));
+    } else {
+      dispatch(translateStatus(status.get('id')));
+    }
   },
 
   onDirect (account, router) {
@@ -238,6 +262,14 @@ const mapDispatchToProps = (dispatch, { intl, contextType }) => ({
         dispatch(deployPictureInPicture(status.get('id'), status.getIn(['account', 'id']), type, mediaProps));
       }
     });
+  },
+
+  onInteractionModal (type, status) {
+    dispatch(openModal('INTERACTION', {
+      type,
+      accountId: status.getIn(['account', 'id']),
+      url: status.get('url'),
+    }));
   },
 
 });

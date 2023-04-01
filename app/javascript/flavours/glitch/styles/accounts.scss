@@ -60,6 +60,7 @@
       width: 48px;
       height: 48px;
       @include avatar-size(48px);
+
       padding-top: 2px;
 
       img {
@@ -68,7 +69,8 @@
         display: block;
         margin: 0;
         border-radius: 4px;
-        @include avatar-radius();
+        @include avatar-radius;
+
         background: darken($ui-base-color, 8%);
         object-fit: cover;
       }
@@ -204,7 +206,9 @@
 }
 
 .account-role,
-.simple_form .recommended {
+.simple_form .recommended,
+.simple_form .not_recommended,
+.simple_form .glitch_only {
   display: inline-block;
   padding: 4px 6px;
   cursor: default;
@@ -212,7 +216,7 @@
   font-size: 12px;
   line-height: 12px;
   font-weight: 500;
-  color: var(--user-role-accent, $ui-secondary-color);
+  color: $ui-secondary-color;
   background-color: var(--user-role-background, rgba($ui-secondary-color, 0.1));
   border: 1px solid var(--user-role-border, rgba($ui-secondary-color, 0.5));
 
@@ -227,6 +231,18 @@
     background-color: rgba(lighten($error-red, 12%), 0.1);
     border-color: rgba(lighten($error-red, 12%), 0.5);
   }
+}
+
+.simple_form .not_recommended {
+  color: lighten($error-red, 12%);
+  background-color: rgba(lighten($error-red, 12%), 0.1);
+  border-color: rgba(lighten($error-red, 12%), 0.5);
+}
+
+.simple_form .glitch_only {
+  color: lighten($warning-red, 12%);
+  background-color: rgba(lighten($warning-red, 12%), 0.1);
+  border-color: rgba(lighten($warning-red, 12%), 0.5);
 }
 
 .account__header__fields {

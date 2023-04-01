@@ -1,4 +1,4 @@
-import api, { getLinks } from 'flavours/glitch/util/api';
+import api, { getLinks } from '../api';
 import { importFetchedStatuses } from './importer';
 
 export const BOOKMARKED_STATUSES_FETCH_REQUEST = 'BOOKMARKED_STATUSES_FETCH_REQUEST';
@@ -25,13 +25,13 @@ export function fetchBookmarkedStatuses() {
       dispatch(fetchBookmarkedStatusesFail(error));
     });
   };
-};
+}
 
 export function fetchBookmarkedStatusesRequest() {
   return {
     type: BOOKMARKED_STATUSES_FETCH_REQUEST,
   };
-};
+}
 
 export function fetchBookmarkedStatusesSuccess(statuses, next) {
   return {
@@ -39,14 +39,14 @@ export function fetchBookmarkedStatusesSuccess(statuses, next) {
     statuses,
     next,
   };
-};
+}
 
 export function fetchBookmarkedStatusesFail(error) {
   return {
     type: BOOKMARKED_STATUSES_FETCH_FAIL,
     error,
   };
-};
+}
 
 export function expandBookmarkedStatuses() {
   return (dispatch, getState) => {
@@ -66,13 +66,13 @@ export function expandBookmarkedStatuses() {
       dispatch(expandBookmarkedStatusesFail(error));
     });
   };
-};
+}
 
 export function expandBookmarkedStatusesRequest() {
   return {
     type: BOOKMARKED_STATUSES_EXPAND_REQUEST,
   };
-};
+}
 
 export function expandBookmarkedStatusesSuccess(statuses, next) {
   return {
@@ -80,11 +80,11 @@ export function expandBookmarkedStatusesSuccess(statuses, next) {
     statuses,
     next,
   };
-};
+}
 
 export function expandBookmarkedStatusesFail(error) {
   return {
     type: BOOKMARKED_STATUSES_EXPAND_FAIL,
     error,
   };
-};
+}

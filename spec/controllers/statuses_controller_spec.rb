@@ -8,7 +8,7 @@ describe StatusesController do
   shared_examples 'cacheable response' do
     it 'does not set cookies' do
       expect(response.cookies).to be_empty
-      expect(response.headers['Set-Cookies']).to be nil
+      expect(response.headers['Set-Cookies']).to be_nil
     end
 
     it 'does not set sessions' do
@@ -426,7 +426,7 @@ describe StatusesController do
       let(:remote_account) { Fabricate(:account, domain: 'example.com') }
 
       before do
-        allow(controller).to receive(:signed_request_account).and_return(remote_account)
+        allow(controller).to receive(:signed_request_actor).and_return(remote_account)
       end
 
       context 'when account blocks account' do

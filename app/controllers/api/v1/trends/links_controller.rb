@@ -18,17 +18,17 @@ class Api::V1::Trends::LinksController < Api::BaseController
   end
 
   def set_links
-    @links = begin
-      if enabled?
-        links_from_trends.offset(offset_param).limit(limit_param(DEFAULT_LINKS_LIMIT))
-      else
-        []
-      end
-    end
+    @links = if enabled?
+               links_from_trends.offset(offset_param).limit(limit_param(DEFAULT_LINKS_LIMIT))
+             else
+               []
+             end
   end
 
   def links_from_trends
-    Trends.links.query.allowed.in_locale(content_locale)
+    scope = Trends.links.query.allowed.in_locale(content_locale)
+    scope = scope.filtered_for(current_account) if user_signed_in?
+    scope
   end
 
   def insert_pagination_headers
