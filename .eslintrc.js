@@ -5,6 +5,8 @@ module.exports = {
     'eslint:recommended',
     'plugin:react/recommended',
     'plugin:jsx-a11y/recommended',
+    'plugin:import/recommended',
+    'plugin:promise/recommended',
   ],
 
   env: {
@@ -30,10 +32,14 @@ module.exports = {
   parserOptions: {
     sourceType: 'module',
     ecmaFeatures: {
-      experimentalObjectRestSpread: true,
       jsx: true,
     },
     ecmaVersion: 2021,
+    requireConfigFile: false,
+    babelOptions: {
+      configFile: false,
+      presets: ['@babel/react', '@babel/env'],
+    },
   },
 
   settings: {
@@ -41,7 +47,7 @@ module.exports = {
       version: 'detect',
     },
     'import/extensions': [
-      '.js',
+      '.js', '.jsx',
     ],
     'import/ignore': [
       'node_modules',
@@ -50,6 +56,7 @@ module.exports = {
     'import/resolver': {
       node: {
         paths: ['app/javascript'],
+        extensions: ['.js', '.jsx'],
       },
     },
   },
@@ -98,7 +105,6 @@ module.exports = {
         ignoreRestSiblings: true,
       },
     ],
-    'no-useless-escape': 'off',
     'object-curly-spacing': ['error', 'always'],
     'padded-blocks': [
       'error',
@@ -110,6 +116,7 @@ module.exports = {
     semi: 'error',
     'valid-typeof': 'error',
 
+    'react/jsx-filename-extension': ['error', { 'allow': 'as-needed' }],
     'react/jsx-boolean-value': 'error',
     'react/jsx-closing-bracket-location': ['error', 'line-aligned'],
     'react/jsx-curly-spacing': 'error',
@@ -178,11 +185,13 @@ module.exports = {
       },
     ],
 
+    // See https://github.com/import-js/eslint-plugin-import/blob/main/config/recommended.js
     'import/extensions': [
       'error',
       'always',
       {
         js: 'never',
+        jsx: 'never',
       },
     ],
     'import/newline-after-import': 'error',
@@ -196,14 +205,35 @@ module.exports = {
         ],
       },
     ],
-    'import/no-unresolved': 'error',
     'import/no-webpack-loader-syntax': 'error',
 
+    'promise/always-return': 'off',
     'promise/catch-or-return': [
       'error',
       {
         allowFinally: true,
       },
     ],
+    'promise/no-callback-in-promise': 'off',
+    'promise/no-nesting': 'off',
+    'promise/no-promise-in-callback': 'off',
   },
+
+  overrides: [
+    {
+      files: [
+        '*.config.js',
+        '.*rc.js',
+        'ide-helper.js',
+      ],
+
+      env: {
+        commonjs: true,
+      },
+
+      parserOptions: {
+        sourceType: 'script',
+      },
+    },
+  ],
 };

@@ -80,7 +80,6 @@
  * @property {boolean} use_blurhash
  * @property {boolean=} use_pending_items
  * @property {string} version
- * @property {boolean} translation_enabled
  */
 
 /**
@@ -132,8 +131,8 @@ export const unfollowModal = getMeta('unfollow_modal');
 export const useBlurhash = getMeta('use_blurhash');
 export const usePendingItems = getMeta('use_pending_items');
 export const version = getMeta('version');
-export const translationEnabled = getMeta('translation_enabled');
 export const languages = initialState?.languages;
+export const statusPageUrl = getMeta('status_page_url');
 
 // Glitch-soc-specific settings
 export const maxChars = (initialState && initialState.max_toot_chars) || 500;
