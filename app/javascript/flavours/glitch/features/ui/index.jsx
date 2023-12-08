@@ -13,16 +13,18 @@ import { debounce } from 'lodash';
 import { HotKeys } from 'react-hotkeys';
 
 import { changeLayout } from 'flavours/glitch/actions/app';
-import { uploadCompose, resetCompose, changeComposeSpoilerness } from 'flavours/glitch/actions/compose';
-import { clearHeight } from 'flavours/glitch/actions/height_cache';
 import { synchronouslySubmitMarkers, submitMarkers, fetchMarkers } from 'flavours/glitch/actions/markers';
-import { expandNotifications, notificationsSetVisibility } from 'flavours/glitch/actions/notifications';
-import { fetchServer, fetchServerTranslationLanguages } from 'flavours/glitch/actions/server';
-import { expandHomeTimeline } from 'flavours/glitch/actions/timelines';
+import { INTRODUCTION_VERSION } from 'flavours/glitch/actions/onboarding';
 import PermaLink from 'flavours/glitch/components/permalink';
 import PictureInPicture from 'flavours/glitch/features/picture_in_picture';
 import { layoutFromWindow } from 'flavours/glitch/is_mobile';
+import { WithRouterPropTypes } from 'flavours/glitch/utils/react_router';
 
+import { uploadCompose, resetCompose, changeComposeSpoilerness } from '../../actions/compose';
+import { clearHeight } from '../../actions/height_cache';
+import { expandNotifications, notificationsSetVisibility } from '../../actions/notifications';
+import { fetchServer, fetchServerTranslationLanguages } from '../../actions/server';
+import { expandHomeTimeline } from '../../actions/timelines';
 import initialState, { me, owner, singleUserMode, trendsEnabled, trendsAsLanding } from '../../initial_state';
 
 import BundleColumnError from './components/bundle_column_error';
@@ -61,7 +63,7 @@ import {
   GettingStartedMisc,
   Directory,
   Explore,
-  FollowRecommendations,
+  Onboarding,
   About,
   PrivacyPolicy,
 } from './util/async-components';
@@ -80,12 +82,12 @@ const mapStateToProps = state => ({
   hasMediaAttachments: state.getIn(['compose', 'media_attachments']).size > 0,
   canUploadMore: !state.getIn(['compose', 'media_attachments']).some(x => ['audio', 'video'].includes(x.get('type'))) && state.getIn(['compose', 'media_attachments']).size < 4,
   isWide: state.getIn(['local_settings', 'stretch']),
-  dropdownMenuIsOpen: state.getIn(['dropdown_menu', 'openId']) !== null,
+  dropdownMenuIsOpen: state.dropdownMenu.openId !== null,
   unreadNotifications: state.getIn(['notifications', 'unread']),
   showFaviconBadge: state.getIn(['local_settings', 'notifications', 'favicon_badge']),
   hicolorPrivacyIcons: state.getIn(['local_settings', 'hicolor_privacy_icons']),
   moved: state.getIn(['accounts', me, 'moved']) && state.getIn(['accounts', state.getIn(['accounts', me, 'moved'])]),
-  firstLaunch: false, // TODO: state.getIn(['settings', 'introductionVersion'], 0) < INTRODUCTION_VERSION,
+  firstLaunch: state.getIn(['settings', 'introductionVersion'], 0) < INTRODUCTION_VERSION,
   username: state.getIn(['accounts', me, 'username']),
 });
 
@@ -191,7 +193,9 @@ class SwitchingColumnsArea extends PureComponent {
 
           {singleColumn ? <Redirect from='/deck' to='/home' exact /> : null}
           {singleColumn && pathName.startsWith('/deck/') ? <Redirect from={pathName} to={pathName.slice(5)} /> : null}
+          {/* Redirect old bookmarks (without /deck) with home-like routes to the advanced interface */}
           {!singleColumn && pathName === '/getting-started' ? <Redirect from='/getting-started' to='/deck/getting-started' exact /> : null}
+          {!singleColumn && pathName === '/home' ? <Redirect from='/home' to='/deck/getting-started' exact /> : null}
 
           <WrappedRoute path='/getting-started' component={GettingStarted} content={children} />
           <WrappedRoute path='/keyboard-shortcuts' component={KeyboardShortcuts} content={children} />
@@ -213,7 +217,7 @@ class SwitchingColumnsArea extends PureComponent {
           <WrappedRoute path='/bookmarks' component={BookmarkedStatuses} content={children} />
           <WrappedRoute path='/pinned' component={PinnedStatuses} content={children} />
 
-          <WrappedRoute path='/start' component={FollowRecommendations} content={children} />
+          <WrappedRoute path='/start' exact component={Onboarding} content={children} />
           <WrappedRoute path='/directory' component={Directory} content={children} />
           <WrappedRoute path={['/explore', '/search']} component={Explore} content={children} />
           <WrappedRoute path={['/publish', '/statuses/new']} component={Compose} content={children} />
@@ -267,8 +271,6 @@ class UI extends Component {
     hasMediaAttachments: PropTypes.bool,
     canUploadMore: PropTypes.bool,
     match: PropTypes.object.isRequired,
-    location: PropTypes.object.isRequired,
-    history: PropTypes.object.isRequired,
     intl: PropTypes.object.isRequired,
     dropdownMenuIsOpen: PropTypes.bool,
     unreadNotifications: PropTypes.number,
@@ -278,6 +280,7 @@ class UI extends Component {
     layout: PropTypes.string.isRequired,
     firstLaunch: PropTypes.bool,
     username: PropTypes.string,
+    ...WithRouterPropTypes,
   };
 
   state = {
@@ -411,12 +414,6 @@ class UI extends Component {
     }
 
     this.favicon = new Favico({ animation:'none' });
-
-    // On first launch, redirect to the follow recommendations page
-    if (signedIn && this.props.firstLaunch) {
-      this.context.router.history.replace('/start');
-      // TODO: this.props.dispatch(closeOnboarding());
-    }
 
     if (signedIn) {
       this.props.dispatch(fetchMarkers());

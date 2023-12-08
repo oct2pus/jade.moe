@@ -3,7 +3,6 @@ import { Record as ImmutableRecord } from 'immutable';
 import { loadingBarReducer } from 'react-redux-loading-bar';
 import { combineReducers } from 'redux-immutable';
 
-import account_notes from './account_notes';
 import accounts from './accounts';
 import accounts_counters from './accounts_counters';
 import accounts_map from './accounts_map';
@@ -16,7 +15,7 @@ import contexts from './contexts';
 import conversations from './conversations';
 import custom_emojis from './custom_emojis';
 import domain_lists from './domain_lists';
-import dropdown_menu from './dropdown_menu';
+import { dropdownMenuReducer } from './dropdown_menu';
 import filters from './filters';
 import followed_tags from './followed_tags';
 import height_cache from './height_cache';
@@ -49,7 +48,7 @@ import user_lists from './user_lists';
 
 const reducers = {
   announcements,
-  dropdown_menu,
+  dropdownMenu: dropdownMenuReducer,
   timelines,
   meta,
   alerts,
@@ -68,8 +67,8 @@ const reducers = {
   push_notifications,
   mutes,
   blocks,
-  server,
   boosts,
+  server,
   contexts,
   compose,
   search,
@@ -87,7 +86,6 @@ const reducers = {
   polls,
   trends,
   markers,
-  account_notes,
   picture_in_picture,
   history,
   tags,
