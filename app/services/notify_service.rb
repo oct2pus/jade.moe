@@ -9,6 +9,9 @@ class NotifyService < BaseService
     update
     poll
     status
+    moderation_warning
+    # TODO: this probably warrants an email notification
+    severed_relationships
   ).freeze
 
   class DismissCondition
@@ -20,7 +23,7 @@ class NotifyService < BaseService
 
     def dismiss?
       blocked   = @recipient.unavailable?
-      blocked ||= from_self? && @notification.type != :poll
+      blocked ||= from_self? && %i(poll severed_relationships moderation_warning).exclude?(@notification.type)
 
       return blocked if message? && from_staff?
 
@@ -73,6 +76,7 @@ class NotifyService < BaseService
       admin.report
       poll
       update
+      account_warning
     ).freeze
 
     def initialize(notification)
@@ -143,6 +147,9 @@ class NotifyService < BaseService
     end
 
     def statuses_that_mention_sender
+      # This queries private mentions from the recipient to the sender up in the thread.
+      # This allows up to 100 messages that do not match in the thread, allowing conversations
+      # involving multiple people.
       Status.count_by_sql([<<-SQL.squish, id: @notification.target_status.in_reply_to_id, recipient_id: @recipient.id, sender_id: @sender.id, depth_limit: 100])
         WITH RECURSIVE ancestors(id, in_reply_to_id, mention_id, path, depth) AS (
             SELECT s.id, s.in_reply_to_id, m.id, ARRAY[s.id], 0
@@ -150,16 +157,17 @@ class NotifyService < BaseService
             LEFT JOIN mentions m ON m.silent = FALSE AND m.account_id = :sender_id AND m.status_id = s.id
             WHERE s.id = :id
           UNION ALL
-            SELECT s.id, s.in_reply_to_id, m.id, st.path || s.id, st.depth + 1
-            FROM ancestors st
-            JOIN statuses s ON s.id = st.in_reply_to_id
-            LEFT JOIN mentions m ON m.silent = FALSE AND m.account_id = :sender_id AND m.status_id = s.id
-            WHERE st.mention_id IS NULL AND NOT s.id = ANY(path) AND st.depth < :depth_limit
+            SELECT s.id, s.in_reply_to_id, m.id, ancestors.path || s.id, ancestors.depth + 1
+            FROM ancestors
+            JOIN statuses s ON s.id = ancestors.in_reply_to_id
+            /* early exit if we already have a mention matching our requirements */
+            LEFT JOIN mentions m ON m.silent = FALSE AND m.account_id = :sender_id AND m.status_id = s.id AND s.account_id = :recipient_id
+            WHERE ancestors.mention_id IS NULL AND NOT s.id = ANY(path) AND ancestors.depth < :depth_limit
         )
         SELECT COUNT(*)
-        FROM ancestors st
-        JOIN statuses s ON s.id = st.id
-        WHERE st.mention_id IS NOT NULL AND s.visibility = 3
+        FROM ancestors
+        JOIN statuses s ON s.id = ancestors.id
+        WHERE ancestors.mention_id IS NOT NULL AND s.account_id = :recipient_id AND s.visibility = 3
       SQL
     end
   end
