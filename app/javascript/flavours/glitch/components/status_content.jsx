@@ -14,7 +14,9 @@ import InsertChartIcon from '@/material-icons/400-24px/insert_chart.svg?react';
 import LinkIcon from '@/material-icons/400-24px/link.svg?react';
 import MovieIcon from '@/material-icons/400-24px/movie.svg?react';
 import MusicNoteIcon from '@/material-icons/400-24px/music_note.svg?react';
+import { ContentWarning } from 'flavours/glitch/components/content_warning';
 import { Icon } from 'flavours/glitch/components/icon';
+import { identityContextPropShape, withIdentity } from 'flavours/glitch/identity_context';
 import { autoPlayGif, languages as preloadedLanguages } from 'flavours/glitch/initial_state';
 import { decode as decodeIDNA } from 'flavours/glitch/utils/idna';
 
@@ -39,13 +41,14 @@ const isLinkMisleading = (link) => {
     case Node.TEXT_NODE:
       linkTextParts.push(node.textContent);
       break;
-    case Node.ELEMENT_NODE:
+    case Node.ELEMENT_NODE: {
       if (node.classList.contains('invisible')) return;
       const children = node.childNodes;
       for (let i = 0; i < children.length; i++) {
         walk(children[i]);
       }
       break;
+    }
     }
   };
 
@@ -126,12 +129,8 @@ const mapStateToProps = state => ({
 });
 
 class StatusContent extends PureComponent {
-
-  static contextTypes = {
-    identity: PropTypes.object,
-  };
-
   static propTypes = {
+    identity: identityContextPropShape,
     status: ImmutablePropTypes.map.isRequired,
     statusContent: PropTypes.string,
     expanded: PropTypes.bool,
@@ -185,6 +184,7 @@ class StatusContent extends PureComponent {
       if (mention) {
         link.addEventListener('click', this.onMentionClick.bind(this, mention), false);
         link.setAttribute('title', `@${mention.get('acct')}`);
+        link.setAttribute('data-hover-card-account', mention.get('id'));
         if (rewriteMentions !== 'no') {
           while (link.firstChild) link.removeChild(link.firstChild);
           link.appendChild(document.createTextNode('@'));
@@ -349,10 +349,10 @@ class StatusContent extends PureComponent {
     const hidden = this.props.onExpandedToggle ? !this.props.expanded : this.state.hidden;
     const contentLocale = intl.locale.replace(/[_-].*/, '');
     const targetLanguages = this.props.languages?.get(status.get('language') || 'und');
-    const renderTranslate = this.props.onTranslate && this.context.identity.signedIn && ['public', 'unlisted'].includes(status.get('visibility')) && status.get('search_index').trim().length > 0 && targetLanguages?.includes(contentLocale);
+    const renderTranslate = this.props.onTranslate && this.props.identity.signedIn && ['public', 'unlisted'].includes(status.get('visibility')) && status.get('search_index').trim().length > 0 && targetLanguages?.includes(contentLocale);
 
     const content = { __html: statusContent ?? getStatusContent(status) };
-    const spoilerContent = { __html: status.getIn(['translation', 'spoilerHtml']) || status.get('spoilerHtml') };
+    const spoilerHtml = status.getIn(['translation', 'spoilerHtml']) || status.get('spoilerHtml');
     const language = status.getIn(['translation', 'language']) || status.get('language');
     const classNames = classnames('status__content', {
       'status__content--with-action': parseClick && !disabled,
@@ -377,45 +377,26 @@ class StatusContent extends PureComponent {
         </Permalink>
       )).reduce((aggregate, item) => [...aggregate, item, ' '], []);
 
-      let toggleText = null;
-      if (hidden) {
-        toggleText = [
-          <FormattedMessage
-            id='status.show_more'
-            defaultMessage='Show more'
-            key='0'
-          />,
-        ];
-        if (mediaIcons) {
-          const mediaComponents = {
-            'link': LinkIcon,
-            'picture-o': ImageIcon,
-            'tasks': InsertChartIcon,
-            'video-camera': MovieIcon,
-            'music': MusicNoteIcon,
-          };
+      let spoilerIcons = [];
+      if (hidden && mediaIcons) {
+        const mediaComponents = {
+          'link': LinkIcon,
+          'picture-o': ImageIcon,
+          'tasks': InsertChartIcon,
+          'video-camera': MovieIcon,
+          'music': MusicNoteIcon,
+        };
 
-          mediaIcons.forEach((mediaIcon, idx) => {
-            toggleText.push(
-              <Icon
-                fixedWidth
-                className='status__content__spoiler-icon'
-                id={mediaIcon}
-                icon={mediaComponents[mediaIcon]}
-                aria-hidden='true'
-                key={`icon-${idx}`}
-              />,
-            );
-          });
-        }
-      } else {
-        toggleText = (
-          <FormattedMessage
-            id='status.show_less'
-            defaultMessage='Show less'
-            key='0'
+        spoilerIcons = mediaIcons.map((mediaIcon) => (
+          <Icon
+            fixedWidth
+            className='status__content__spoiler-icon'
+            id={mediaIcon}
+            icon={mediaComponents[mediaIcon]}
+            aria-hidden='true'
+            key={`icon-${mediaIcon}`}
           />
-        );
+        ));
       }
 
       if (hidden) {
@@ -424,15 +405,7 @@ class StatusContent extends PureComponent {
 
       return (
         <div className={classNames} tabIndex={0} onMouseDown={this.handleMouseDown} onMouseUp={this.handleMouseUp}>
-          <p
-            style={{ marginBottom: hidden && status.get('mentions').isEmpty() ? '0px' : null }}
-          >
-            <span dangerouslySetInnerHTML={spoilerContent} className='translate' lang={language} />
-            {' '}
-            <button type='button' className='status__content__spoiler-link' onClick={this.handleSpoilerClick} aria-expanded={!hidden}>
-              {toggleText}
-            </button>
-          </p>
+          <ContentWarning text={spoilerHtml} expanded={!hidden} onClick={this.handleSpoilerClick} icons={spoilerIcons} />
 
           {mentionsPlaceholder}
 
@@ -503,4 +476,4 @@ class StatusContent extends PureComponent {
 
 }
 
-export default withRouter(connect(mapStateToProps)(injectIntl(StatusContent)));
+export default withRouter(withIdentity(connect(mapStateToProps)(injectIntl(StatusContent))));
