@@ -7,33 +7,34 @@
 # the extended buildx capabilities used in this file.
 # Make sure multiarch TARGETPLATFORM is available for interpolation
 # See: https://docs.docker.com/build/building/multi-platform/
-#ARG TARGETPLATFORM=${TARGETPLATFORM}
-#ARG BUILDPLATFORM=${BUILDPLATFORM}
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
 
 # Ruby image to use for base image, change with [--build-arg RUBY_VERSION="3.3.x"]
 # renovate: datasource=docker depName=docker.io/ruby
 ARG RUBY_VERSION="3.3.5"
 # # Node version to use in base image, change with [--build-arg NODE_MAJOR_VERSION="20"]
+# renovate: datasource=node-version depName=node
 ARG NODE_MAJOR_VERSION="20"
 # Debian image to use for base image, change with [--build-arg DEBIAN_VERSION="bookworm"]
 ARG DEBIAN_VERSION="bookworm"
 # Node image to use for base image based on combined variables (ex: 20-bookworm-slim)
-FROM docker.io/node:${NODE_MAJOR_VERSION}-${DEBIAN_VERSION}-slim as node
-# Ruby image to use for base image based on combined variables (ex: 3.2.3-slim-bookworm)
-FROM docker.io/ruby:${RUBY_VERSION}-slim-${DEBIAN_VERSION} as ruby
+FROM docker.io/node:${NODE_MAJOR_VERSION}-${DEBIAN_VERSION}-slim AS node
+# Ruby image to use for base image based on combined variables (ex: 3.3.x-slim-bookworm)
+FROM docker.io/ruby:${RUBY_VERSION}-slim-${DEBIAN_VERSION} AS ruby
 
 # Resulting version string is vX.X.X-MASTODON_VERSION_PRERELEASE+MASTODON_VERSION_METADATA
-# Example: v4.2.0-nightly.2023.11.09+something
-# Overwrite existence of 'alpha.0' in version.rb [--build-arg MASTODON_VERSION_PRERELEASE="nightly.2023.11.09"]
+# Example: v4.3.0-nightly.2023.11.09+pr-123456
+# Overwrite existence of 'alpha.X' in version.rb [--build-arg MASTODON_VERSION_PRERELEASE="nightly.2023.11.09"]
 ARG MASTODON_VERSION_PRERELEASE=""
-# Append build metadata or fork information to version.rb [--build-arg MASTODON_VERSION_METADATA="something"]
+# Append build metadata or fork information to version.rb [--build-arg MASTODON_VERSION_METADATA="pr-123456"]
 ARG MASTODON_VERSION_METADATA=""
 
 # Allow Ruby on Rails to serve static files
 # See: https://docs.joinmastodon.org/admin/config/#rails_serve_static_files
 ARG RAILS_SERVE_STATIC_FILES="true"
 # Allow to use YJIT compiler
-# See: https://github.com/ruby/ruby/blob/v3_2_3/doc/yjit/yjit.md
+# See: https://github.com/ruby/ruby/blob/v3_2_4/doc/yjit/yjit.md
 ARG RUBY_YJIT_ENABLE="1"
 # Timezone used by the Docker container and runtime, change with [--build-arg TZ=Europe/Berlin]
 ARG TZ="Etc/UTC"
@@ -101,11 +102,8 @@ RUN \
   apt-get dist-upgrade -yq; \
 # Install jemalloc, curl and other necessary components
   apt-get install -y --no-install-recommends \
-    ca-certificates \
     curl \
-    ffmpeg \
     file \
-    imagemagick \
     libjemalloc2 \
     patchelf \
     procps \
@@ -121,7 +119,7 @@ RUN \
   ;
 
 # Create temporary build layer from base image
-FROM ruby as build
+FROM ruby AS build
 
 # Copy Node package configuration files into working directory
 COPY package.json yarn.lock .yarnrc.yml /opt/mastodon/
@@ -139,18 +137,47 @@ RUN \
 --mount=type=cache,id=apt-lib-${TARGETPLATFORM},target=/var/lib/apt,sharing=locked \
 # Install build tools and bundler dependencies from APT
   apt-get install -y --no-install-recommends \
-    g++ \
-    gcc \
+    autoconf \
+    automake \
+    build-essential \
+    cmake \
     git \
     libgdbm-dev \
+    libglib2.0-dev \
     libgmp-dev \
     libicu-dev \
     libidn-dev \
     libpq-dev \
     libssl-dev \
-    make \
+    libtool \
+    meson \
+    nasm \
+    pkg-config \
     shared-mime-info \
-    zlib1g-dev \
+    xz-utils \
+	# libvips components
+    libcgif-dev \
+    libexif-dev \
+    libexpat1-dev \
+    libgirepository1.0-dev \
+    libheif-dev \
+    libimagequant-dev \
+    libjpeg62-turbo-dev \
+    liblcms2-dev \
+    liborc-dev \
+    libspng-dev \
+    libtiff-dev \
+    libwebp-dev \
+  # ffmpeg components
+    libdav1d-dev \
+    liblzma-dev \
+    libmp3lame-dev \
+    libopus-dev \
+    libsnappy-dev \
+    libvorbis-dev \
+    libvpx-dev \
+    libx264-dev \
+    libx265-dev \
   ;
 
 RUN \
@@ -164,7 +191,7 @@ FROM build AS libvips
 
 # libvips version to compile, change with [--build-arg VIPS_VERSION="8.15.2"]
 # renovate: datasource=github-releases depName=libvips packageName=libvips/libvips
-ARG VIPS_VERSION=8.15.3
+ARG VIPS_VERSION=8.15.5
 # libvips download URL, change with [--build-arg VIPS_URL="https://github.com/libvips/libvips/releases/download"]
 ARG VIPS_URL=https://github.com/libvips/libvips/releases/download
 
@@ -228,7 +255,7 @@ RUN \
   make install;
 
 # Create temporary bundler specific build layer from build layer
-FROM build as bundler
+FROM build AS bundler
 
 ARG TARGETPLATFORM
 
@@ -250,7 +277,7 @@ RUN \
   bundle install -j"$(nproc)";
 
 # Create temporary node specific build layer from build layer
-FROM build as yarn
+FROM build AS yarn
 
 ARG TARGETPLATFORM
 
@@ -267,7 +294,7 @@ RUN \
   yarn workspaces focus --production @mastodon/mastodon;
 
 # Create temporary assets build layer from build layer
-FROM build as precompiler
+FROM build AS precompiler
 
 # Copy Mastodon sources into precompiler layer
 COPY . /opt/mastodon/
@@ -276,22 +303,22 @@ COPY . /opt/mastodon/
 COPY --from=yarn /opt/mastodon /opt/mastodon/
 COPY --from=bundler /opt/mastodon /opt/mastodon/
 COPY --from=bundler /usr/local/bundle/ /usr/local/bundle/
+# Copy libvips components to layer for precompiler
+COPY --from=libvips /usr/local/libvips/bin /usr/local/bin
+COPY --from=libvips /usr/local/libvips/lib /usr/local/lib
 
 ARG TARGETPLATFORM
 
 RUN \
+  ldconfig; \
 # Use Ruby on Rails to create Mastodon assets
-  ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY=precompile_placeholder \
-  ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT=precompile_placeholder \
-  ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY=precompile_placeholder \
-  OTP_SECRET=precompile_placeholder \
-  SECRET_KEY_BASE=precompile_placeholder \
+  SECRET_KEY_BASE_DUMMY=1 \
   bundle exec rails assets:precompile; \
 # Cleanup temporary files
-  rm -fr /opt/mastodon/tmp;# Prep final Mastodon Ruby layer
+  rm -fr /opt/mastodon/tmp;
 
 # Prep final Mastodon Ruby layer
-FROM ruby as mastodon
+FROM ruby AS mastodon
 
 ARG TARGETPLATFORM
 
@@ -305,12 +332,41 @@ RUN \
 --mount=type=cache,id=yarn-cache-${TARGETPLATFORM},target=/usr/local/share/.cache/yarn,sharing=locked \
 # Apt update install non-dev versions of necessary components
   apt-get install -y --no-install-recommends \
-    libssl3 \
-    libpq5 \
+    libexpat1 \
+    libglib2.0-0 \
     libicu72 \
     libidn12 \
+    libpq5 \
     libreadline8 \
+    libssl3 \
     libyaml-0-2 \
+  # libvips components
+    libcgif0 \
+    libexif12 \
+    libheif1 \
+    libimagequant0 \
+    libjpeg62-turbo \
+    liblcms2-2 \
+    liborc-0.4-0 \
+    libspng0 \
+    libtiff6 \
+    libwebp7 \
+    libwebpdemux2 \
+    libwebpmux3 \
+  # ffmpeg components
+    libdav1d6 \
+    libmp3lame0 \
+    libopencore-amrnb0 \
+    libopencore-amrwb0 \
+    libopus0 \
+    libsnappy1v5 \
+    libtheora0 \
+    libvorbis0a \
+    libvorbisenc2 \
+    libvorbisfile3 \
+    libvpx7 \
+    libx264-164 \
+    libx265-199 \
   ;
 
 # Copy Mastodon sources into final layer
@@ -321,9 +377,22 @@ COPY --from=precompiler /opt/mastodon/public/packs /opt/mastodon/public/packs
 COPY --from=precompiler /opt/mastodon/public/assets /opt/mastodon/public/assets
 # Copy bundler components to layer
 COPY --from=bundler /usr/local/bundle/ /usr/local/bundle/
+# Copy libvips components to layer
+COPY --from=libvips /usr/local/libvips/bin /usr/local/bin
+COPY --from=libvips /usr/local/libvips/lib /usr/local/lib
+# Copy ffpmeg components to layer
+COPY --from=ffmpeg /usr/local/ffmpeg/bin /usr/local/bin
+COPY --from=ffmpeg /usr/local/ffmpeg/lib /usr/local/lib
 
 RUN \
-# Precompile bootsnap code for faster Rails startup
+  ldconfig; \
+# Smoketest media processors
+  vips -v; \
+  ffmpeg -version; \
+  ffprobe -version;
+
+RUN \
+  # Precompile bootsnap code for faster Rails startup
   bundle exec bootsnap precompile --gemfile app/ lib/;
 
 RUN \
