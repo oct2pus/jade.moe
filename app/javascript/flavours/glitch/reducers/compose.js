@@ -1,5 +1,6 @@
 import { Map as ImmutableMap, List as ImmutableList, OrderedSet as ImmutableOrderedSet, fromJS } from 'immutable';
 
+import { changeUploadCompose } from 'flavours/glitch/actions/compose_typed';
 import { timelineDelete } from 'flavours/glitch/actions/timelines_typed';
 
 import {
@@ -38,18 +39,12 @@ import {
   COMPOSE_COMPOSING_CHANGE,
   COMPOSE_CONTENT_TYPE_CHANGE,
   COMPOSE_EMOJI_INSERT,
-  COMPOSE_UPLOAD_CHANGE_REQUEST,
-  COMPOSE_UPLOAD_CHANGE_SUCCESS,
-  COMPOSE_UPLOAD_CHANGE_FAIL,
   COMPOSE_DOODLE_SET,
   COMPOSE_RESET,
   COMPOSE_POLL_ADD,
   COMPOSE_POLL_REMOVE,
   COMPOSE_POLL_OPTION_CHANGE,
   COMPOSE_POLL_SETTINGS_CHANGE,
-  INIT_MEDIA_EDIT_MODAL,
-  COMPOSE_CHANGE_MEDIA_DESCRIPTION,
-  COMPOSE_CHANGE_MEDIA_FOCUS,
   COMPOSE_CHANGE_MEDIA_ORDER,
   COMPOSE_SET_STATUS,
   COMPOSE_FOCUS,
@@ -102,13 +97,6 @@ const initialState = ImmutableMap({
   resetFileKey: Math.floor((Math.random() * 0x10000)),
   idempotencyKey: null,
   tagHistory: ImmutableList(),
-  media_modal: ImmutableMap({
-    id: null,
-    description: '',
-    focusX: 0,
-    focusY: 0,
-    dirty: false,
-  }),
   doodle: ImmutableMap({
     fg: 'rgb(  0,    0,    0)',
     bg: 'rgb(255,  255,  255)',
@@ -177,6 +165,7 @@ function clearAll(state) {
     map.set('sensitive', state.get('default_sensitive'));
     map.set('language', state.get('default_language'));
     map.update('media_attachments', list => list.clear());
+    map.set('progress', 0);
     map.set('poll', null);
     map.set('idempotencyKey', uuid());
   });
@@ -221,6 +210,7 @@ function appendMedia(state, media, file) {
     map.update('media_attachments', list => list.push(media.set('unattached', true)));
     map.set('is_uploading', false);
     map.set('is_processing', false);
+    map.set('progress', 0);
     map.set('resetFileKey', Math.floor((Math.random() * 0x10000)));
     map.set('idempotencyKey', uuid());
     map.update('pending_media_attachments', n => n - 1);
@@ -330,12 +320,26 @@ const expiresInFromExpiresAt = expires_at => {
 
 const mergeLocalHashtagResults = (suggestions, prefix, tagHistory) => {
   prefix = prefix.toLowerCase();
+
   if (suggestions.length < 4) {
     const localTags = tagHistory.filter(tag => tag.toLowerCase().startsWith(prefix) && !suggestions.some(suggestion => suggestion.type === 'hashtag' && suggestion.name.toLowerCase() === tag.toLowerCase()));
-    return suggestions.concat(localTags.slice(0, 4 - suggestions.length).toJS().map(tag => ({ type: 'hashtag', name: tag })));
-  } else {
-    return suggestions;
+    suggestions = suggestions.concat(localTags.slice(0, 4 - suggestions.length).toJS().map(tag => ({ type: 'hashtag', name: tag })));
   }
+
+  // Prefer capitalization from personal history, unless personal history is all lower-case
+  const fixSuggestionCapitalization = (suggestion) => {
+    if (suggestion.type !== 'hashtag')
+      return suggestion;
+
+    const tagFromHistory = tagHistory.find((tag) => tag.localeCompare(suggestion.name, undefined, { sensitivity: 'accent' }) === 0);
+
+    if (!tagFromHistory || tagFromHistory.toLowerCase() === tagFromHistory)
+      return suggestion;
+
+    return { ...suggestion, name: tagFromHistory };
+  };
+
+  return suggestions.map(fixSuggestionCapitalization);
 };
 
 const normalizeSuggestions = (state, { accounts, emojis, tags, token }) => {
@@ -370,7 +374,26 @@ const updatePoll = (state, index, value, maxOptions) => state.updateIn(['poll', 
   return tmp;
 });
 
-export default function compose(state = initialState, action) {
+const calculateProgress = (loaded, total) => Math.min(Math.round((loaded / total) * 100), 100);
+
+/** @type {import('@reduxjs/toolkit').Reducer<typeof initialState>} */
+export const composeReducer = (state = initialState, action) => {
+  if (changeUploadCompose.fulfilled.match(action)) {
+    return state
+      .set('is_changing_upload', false)
+      .update('media_attachments', list => list.map(item => {
+        if (item.get('id') === action.payload.media.id) {
+          return fromJS(action.payload.media).set('unattached', !action.payload.attached);
+        }
+
+        return item;
+      }));
+  } else if (changeUploadCompose.pending.match(action)) {
+    return state.set('is_changing_upload', true);
+  } else if (changeUploadCompose.rejected.match(action)) {
+    return state.set('is_changing_upload', false);
+  }
+
   switch(action.type) {
   case STORE_HYDRATE:
     return hydrate(state, action.state.get('compose'));
@@ -476,14 +499,10 @@ export default function compose(state = initialState, action) {
     });
   case COMPOSE_SUBMIT_REQUEST:
     return state.set('is_submitting', true);
-  case COMPOSE_UPLOAD_CHANGE_REQUEST:
-    return state.set('is_changing_upload', true);
   case COMPOSE_SUBMIT_SUCCESS:
     return action.status && state.getIn(['advanced_options', 'threaded_mode']) ? continueThread(state, action.status) : clearAll(state);
   case COMPOSE_SUBMIT_FAIL:
     return state.set('is_submitting', false);
-  case COMPOSE_UPLOAD_CHANGE_FAIL:
-    return state.set('is_changing_upload', false);
   case COMPOSE_UPLOAD_REQUEST:
     return state.set('is_uploading', true).update('pending_media_attachments', n => n + 1);
   case COMPOSE_UPLOAD_PROCESSING:
@@ -491,15 +510,19 @@ export default function compose(state = initialState, action) {
   case COMPOSE_UPLOAD_SUCCESS:
     return appendMedia(state, fromJS(action.media), action.file);
   case COMPOSE_UPLOAD_FAIL:
-    return state.set('is_uploading', false).set('is_processing', false).update('pending_media_attachments', n => n - 1);
+    return state
+      .set('is_uploading', false)
+      .set('is_processing', false)
+      .set('progress', 0)
+      .update('pending_media_attachments', n => n - 1);
   case COMPOSE_UPLOAD_UNDO:
     return removeMedia(state, action.media_id);
   case COMPOSE_UPLOAD_PROGRESS:
-    return state.set('progress', Math.round((action.loaded / action.total) * 100));
+    return state.set('progress', calculateProgress(action.loaded, action.total));
   case THUMBNAIL_UPLOAD_REQUEST:
     return state.set('isUploadingThumbnail', true);
   case THUMBNAIL_UPLOAD_PROGRESS:
-    return state.set('thumbnailProgress', Math.round((action.loaded / action.total) * 100));
+    return state.set('thumbnailProgress', calculateProgress(action.loaded, action.total));
   case THUMBNAIL_UPLOAD_FAIL:
     return state.set('isUploadingThumbnail', false);
   case THUMBNAIL_UPLOAD_SUCCESS:
@@ -512,20 +535,6 @@ export default function compose(state = initialState, action) {
 
         return item;
       }));
-  case INIT_MEDIA_EDIT_MODAL: {
-    const media =  state.get('media_attachments').find(item => item.get('id') === action.id);
-    return state.set('media_modal', ImmutableMap({
-      id: action.id,
-      description: media.get('description') || '',
-      focusX: media.getIn(['meta', 'focus', 'x'], 0),
-      focusY: media.getIn(['meta', 'focus', 'y'], 0),
-      dirty: false,
-    }));
-  }
-  case COMPOSE_CHANGE_MEDIA_DESCRIPTION:
-    return state.setIn(['media_modal', 'description'], action.description).setIn(['media_modal', 'dirty'], true);
-  case COMPOSE_CHANGE_MEDIA_FOCUS:
-    return state.setIn(['media_modal', 'focusX'], action.focusX).setIn(['media_modal', 'focusY'], action.focusY).setIn(['media_modal', 'dirty'], true);
   case COMPOSE_MENTION:
     return state.withMutations(map => {
       map.update('text', text => [text.trim(), `@${action.account.get('acct')} `].filter((str) => str.length !== 0).join(' '));
@@ -563,17 +572,6 @@ export default function compose(state = initialState, action) {
     }
   case COMPOSE_EMOJI_INSERT:
     return insertEmoji(state, action.position, action.emoji, action.needsSpace);
-  case COMPOSE_UPLOAD_CHANGE_SUCCESS:
-    return state
-      .set('is_changing_upload', false)
-      .setIn(['media_modal', 'dirty'], false)
-      .update('media_attachments', list => list.map(item => {
-        if (item.get('id') === action.media.id) {
-          return fromJS(action.media).set('unattached', !action.attached);
-        }
-
-        return item;
-      }));
   case COMPOSE_DOODLE_SET:
     return state.mergeIn(['doodle'], action.options);
   case REDRAFT: {
@@ -611,9 +609,9 @@ export default function compose(state = initialState, action) {
 
       if (action.status.get('poll')) {
         map.set('poll', ImmutableMap({
-          options: action.status.getIn(['poll', 'options']).map(x => x.get('title')),
-          multiple: action.status.getIn(['poll', 'multiple']),
-          expires_in: expiresInFromExpiresAt(action.status.getIn(['poll', 'expires_at'])),
+          options: ImmutableList(action.status.get('poll').options.map(x => x.title)),
+          multiple: action.status.get('poll').multiple,
+          expires_in: expiresInFromExpiresAt(action.status.get('poll').expires_at),
         }));
       }
     });
@@ -642,9 +640,9 @@ export default function compose(state = initialState, action) {
 
       if (action.status.get('poll')) {
         map.set('poll', ImmutableMap({
-          options: action.status.getIn(['poll', 'options']).map(x => x.get('title')),
-          multiple: action.status.getIn(['poll', 'multiple']),
-          expires_in: expiresInFromExpiresAt(action.status.getIn(['poll', 'expires_at'])),
+          options: ImmutableList(action.status.get('poll').options.map(x => x.title)),
+          multiple: action.status.get('poll').multiple,
+          expires_in: expiresInFromExpiresAt(action.status.get('poll').expires_at),
         }));
       }
     });
@@ -671,4 +669,4 @@ export default function compose(state = initialState, action) {
   default:
     return state;
   }
-}
+};
