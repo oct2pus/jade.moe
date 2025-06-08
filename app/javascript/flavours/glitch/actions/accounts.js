@@ -2,6 +2,7 @@ import { browserHistory } from 'flavours/glitch/components/router';
 import { debounceWithDispatchAndArguments } from 'flavours/glitch/utils/debounce';
 
 import api, { getLinks } from '../api';
+import { me } from '../initial_state';
 
 import {
   followAccountSuccess, unfollowAccountSuccess,
@@ -12,6 +13,7 @@ import {
   blockAccountSuccess, unblockAccountSuccess,
   pinAccountSuccess, unpinAccountSuccess,
   fetchRelationshipsSuccess,
+  fetchEndorsedAccounts,
 } from './accounts_typed';
 import { importFetchedAccount, importFetchedAccounts } from './importer';
 
@@ -73,19 +75,6 @@ export const FOLLOW_REQUEST_AUTHORIZE_FAIL    = 'FOLLOW_REQUEST_AUTHORIZE_FAIL';
 
 export const FOLLOW_REQUEST_REJECT_REQUEST = 'FOLLOW_REQUEST_REJECT_REQUEST';
 export const FOLLOW_REQUEST_REJECT_FAIL    = 'FOLLOW_REQUEST_REJECT_FAIL';
-
-export const PINNED_ACCOUNTS_FETCH_REQUEST = 'PINNED_ACCOUNTS_FETCH_REQUEST';
-export const PINNED_ACCOUNTS_FETCH_SUCCESS = 'PINNED_ACCOUNTS_FETCH_SUCCESS';
-export const PINNED_ACCOUNTS_FETCH_FAIL    = 'PINNED_ACCOUNTS_FETCH_FAIL';
-
-export const PINNED_ACCOUNTS_SUGGESTIONS_FETCH_REQUEST  = 'PINNED_ACCOUNTS_SUGGESTIONS_FETCH_REQUEST';
-export const PINNED_ACCOUNTS_SUGGESTIONS_FETCH_SUCCESS  = 'PINNED_ACCOUNTS_SUGGESTIONS_FETCH_SUCCESS';
-export const PINNED_ACCOUNTS_SUGGESTIONS_FETCH_FAIL     = 'PINNED_ACCOUNTS_SUGGESTIONS_FETCH_FAIL';
-
-export const PINNED_ACCOUNTS_EDITOR_SUGGESTIONS_CLEAR  = 'PINNED_ACCOUNTS_EDITOR_SUGGESTIONS_CLEAR';
-export const PINNED_ACCOUNTS_EDITOR_SUGGESTIONS_CHANGE = 'PINNED_ACCOUNTS_EDITOR_SUGGESTIONS_CHANGE';
-
-export const PINNED_ACCOUNTS_EDITOR_RESET = 'PINNED_ACCOUNTS_EDITOR_RESET';
 
 export const ACCOUNT_REVEAL = 'ACCOUNT_REVEAL';
 
@@ -155,6 +144,13 @@ export function fetchAccountFail(id, error) {
   };
 }
 
+/**
+ * @param {string} id
+ * @param {Object} options
+ * @param {boolean} [options.reblogs]
+ * @param {boolean} [options.notify]
+ * @returns {function(): void}
+ */
 export function followAccount(id, options = { reblogs: true }) {
   return (dispatch, getState) => {
     const alreadyFollowing = getState().getIn(['relationships', id, 'following']);
@@ -640,6 +636,7 @@ export function pinAccount(id) {
 
     api().post(`/api/v1/accounts/${id}/pin`).then(response => {
       dispatch(pinAccountSuccess({ relationship: response.data }));
+      dispatch(fetchEndorsedAccounts({ accountId: me }));
     }).catch(error => {
       dispatch(pinAccountFail(error));
     });
@@ -652,6 +649,7 @@ export function unpinAccount(id) {
 
     api().post(`/api/v1/accounts/${id}/unpin`).then(response => {
       dispatch(unpinAccountSuccess({ relationship: response.data }));
+      dispatch(fetchEndorsedAccounts({ accountId: me }));
     }).catch(error => {
       dispatch(unpinAccountFail(error));
     });
@@ -686,38 +684,6 @@ export function unpinAccountFail(error) {
   };
 }
 
-export function fetchPinnedAccounts() {
-  return (dispatch) => {
-    dispatch(fetchPinnedAccountsRequest());
-
-    api().get('/api/v1/endorsements', { params: { limit: 0 } }).then(response => {
-      dispatch(importFetchedAccounts(response.data));
-      dispatch(fetchPinnedAccountsSuccess(response.data));
-    }).catch(err => dispatch(fetchPinnedAccountsFail(err)));
-  };
-}
-
-export function fetchPinnedAccountsRequest() {
-  return {
-    type: PINNED_ACCOUNTS_FETCH_REQUEST,
-  };
-}
-
-export function fetchPinnedAccountsSuccess(accounts, next) {
-  return {
-    type: PINNED_ACCOUNTS_FETCH_SUCCESS,
-    accounts,
-    next,
-  };
-}
-
-export function fetchPinnedAccountsFail(error) {
-  return {
-    type: PINNED_ACCOUNTS_FETCH_FAIL,
-    error,
-  };
-}
-
 export const updateAccount = ({ displayName, note, avatar, header, discoverable, indexable }) => (dispatch) => {
   const data = new FormData();
 
@@ -736,68 +702,9 @@ export const updateAccount = ({ displayName, note, avatar, header, discoverable,
 export const navigateToProfile = (accountId) => {
   return (_dispatch, getState) => {
     const acct = getState().accounts.getIn([accountId, 'acct']);
-  
+
     if (acct) {
       browserHistory.push(`/@${acct}`);
     }
   };
 };
-
-export function fetchPinnedAccountsSuggestions(q) {
-  return (dispatch) => {
-    dispatch(fetchPinnedAccountsSuggestionsRequest());
-
-    const params = {
-      q,
-      resolve: false,
-      limit: 4,
-      following: true,
-    };
-
-    api().get('/api/v1/accounts/search', { params }).then(response => {
-      dispatch(importFetchedAccounts(response.data));
-      dispatch(fetchPinnedAccountsSuggestionsSuccess(q, response.data));
-    }).catch(err => dispatch(fetchPinnedAccountsSuggestionsFail(err)));
-  };
-}
-
-export function fetchPinnedAccountsSuggestionsRequest() {
-  return {
-    type: PINNED_ACCOUNTS_SUGGESTIONS_FETCH_REQUEST,
-  };
-}
-
-export function fetchPinnedAccountsSuggestionsSuccess(query, accounts) {
-  return {
-    type: PINNED_ACCOUNTS_SUGGESTIONS_FETCH_SUCCESS,
-    query,
-    accounts,
-  };
-}
-
-export function fetchPinnedAccountsSuggestionsFail(error) {
-  return {
-    type: PINNED_ACCOUNTS_SUGGESTIONS_FETCH_FAIL,
-    error,
-  };
-}
-
-export function clearPinnedAccountsSuggestions() {
-  return {
-    type: PINNED_ACCOUNTS_EDITOR_SUGGESTIONS_CLEAR,
-  };
-}
-
-export function changePinnedAccountsSuggestions(value) {
-  return {
-    type: PINNED_ACCOUNTS_EDITOR_SUGGESTIONS_CHANGE,
-    value,
-  };
-}
-
-export function resetPinnedAccountsEditor() {
-  return {
-    type: PINNED_ACCOUNTS_EDITOR_RESET,
-  };
-}
-
